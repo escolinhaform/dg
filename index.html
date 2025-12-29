@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Escolinha Avalon</title>
+  <link rel="stylesheet" href="css/style.css?t=1.023">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#2a5298">
+</head>
+
+<body>
+  <div class="register-container">
+    <!-- Container de notificações -->
+    <div id="notificationContainer" class="notification-container"></div>
+
+    <div class="register-box">
+      <h2>DG NORMAL</h2>
+      <p style="text-align: center; color: #666; margin-bottom: 30px;">
+        Preencha seu nick, classe e IP na arma de disputa
+      </p>
+
+      <form id="registerForm">
+        <div class="form-group">
+          <label for="nickname">Nick do Jogador</label>
+          <input type="text" id="nickname" placeholder="Nickname" required>
+          <small style="color: #999; margin-top: 5px; display: block;">
+          </small>
+        </div>
+
+        <div class="form-group">
+          <label for="playerClass">Classe</label>
+          <select id="playerClass" required>
+            <option value="">-- Selecione sua classe --</option>
+            <optgroup label="Main Classes">
+              <option value="Off Tank">Off Tank</option>
+              <option value="Elevado">Elevado</option>
+              <option value="Silence">Silence</option>
+              <option value="Main Healer">Main Healer</option>
+              <option value="Raiz Ferrea PT Heal">Raiz Ferrea PT Heal</option>
+            </optgroup>
+            <optgroup label="Suportes">
+              <option value="Quebra Reinos">Quebra Reinos</option>
+              <option value="Bruxo">Bruxo Suporte</option>
+              <option value="Oculto">Oculto</option>
+              <option value="Incubus">Incubus</option>
+            </optgroup>
+            <optgroup label="DPS">
+              <option value="Foice">Foice</option>
+              <option value="Fire">Fire</option>
+              <option value="Frost">Frost</option>
+              <option value="Xbow">Xbow</option>
+              <option value="Aguia">Aguia</option>
+              <option value="Bruxo DPS">Bruxo DPS</option>
+              <option value="Raiz DPS">Raiz DPS</option>
+            </optgroup>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="ip" id="ipLabel">IP</label>
+          <input type="number" id="ip" placeholder="0" min="0" max="2500" required>
+          <small style="color: #999; margin-top: 5px; display: block;">
+            Digite seu IP na arma de disputa
+          </small>
+        </div>
+
+        <button type="submit" class="btn">✅ Registrar na PT</button>
+
+        <div id="message"></div>
+      </form>
+    </div>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script>
+    let classWeaponMap = {};
+
+    // Carregar DG selecionada e atualizar título e armas
+    async function loadDGTitle() {
+      try {
+        const selectedDG = await getSelectedDG();
+        const titleElement = document.querySelector('h2');
+        
+        if (selectedDG) {
+          titleElement.textContent = selectedDG.dg_type;
+          generateWeaponMap(selectedDG.dg_type);
+        } else {
+          titleElement.textContent = 'DG NORMAL';
+          generateWeaponMap('DG NORMAL');
+        }
+      } catch (error) {
+        console.error('Erro ao carregar DG:', error);
+        document.querySelector('h2').textContent = 'DG NORMAL';
+        generateWeaponMap('DG NORMAL');
+      }
+    }
+
+    // Gerar mapeamento de armas baseado na DG
+    function generateWeaponMap(dgType) {
+      const baseWeapons = {
+        'Off Tank': 'Armadura de guardião',
+        'Silence': 'Bengala',
+        'Elevado': 'Arcano Elevado',
+        'Main Healer': 'Incensário',
+        'Raiz Ferrea PT Heal': 'Corrompido',
+        'Bruxo': 'Danação',
+        'Incubus': 'Brumario',
+        'Oculto': 'Armadura de guardião',
+        'Quebra Reinos': 'Armadura real',
+        'Bruxo Suporte': 'Danação',
+        'Foice': 'Arma PVE',
+        'Fire': 'Arma PVE',
+        'Frost': 'Arma PVE',
+        'Xbow': 'Arma PVE',
+        'Aguia': 'Arma PVE',
+        'Bruxo DPS': 'Arma PVE',
+        'Raiz DPS': 'Casaco Infernal'
+      };
+
+      const dpsList = ['Foice', 'Fire', 'Frost', 'Xbow', 'Aguia', 'Bruxo DPS', 'Raiz DPS'];
+      const alwaysT80Classes = ['Oculto', 'Incubus', 'Bruxo', 'Bruxo Suporte'];
+
+      // Definir o tier baseado na DG
+      if (dgType === 'DG NORMAL') {
+        // DG NORMAL mantém os tiers específicos
+        classWeaponMap = {
+          'Off Tank': 'Armadura de guardião T8.1',
+          'Silence': 'Bengala T8.3',
+          'Elevado': 'Arcano Elevado T8.1',
+          'Main Healer': 'Incensário T8.1',
+          'Raiz Ferrea PT Heal': 'Corrompido T8.1',
+          'Bruxo': 'Danação T8.0',
+          'Incubus': 'Brumario T8.0',
+          'Oculto': 'Armadura de guardião T8.0',
+          'Quebra Reinos': 'Armadura real T8.1',
+          'Bruxo Suporte': 'Danação T8.0',
+          'Foice': 'Arma PVE T8.1',
+          'Fire': 'Arma PVE T8.1',
+          'Frost': 'Arma PVE T8.1',
+          'Xbow': 'Arma PVE T8.1',
+          'Aguia': 'Arma PVE T8.1',
+          'Bruxo DPS': 'Arma PVE T8.1',
+          'Raiz DPS': 'Casaco Infernal T8.1'
+        };
+      } else if (dgType === 'DG TREINAMENTO') {
+        // TREINAMENTO: TODOS são T8.0
+        classWeaponMap = {};
+        Object.keys(baseWeapons).forEach(className => {
+          classWeaponMap[className] = baseWeapons[className] + ' T8.0';
+        });
+      } else if (dgType === 'DG PROMO 8.3') {
+        // PROMO 8.3: TODOS são T8.1, EXCETO DPS e Oculto/Incubus/Bruxo que são T8.0
+        classWeaponMap = {};
+        Object.keys(baseWeapons).forEach(className => {
+          let tier;
+          if (dpsList.includes(className) || alwaysT80Classes.includes(className)) {
+            tier = 'T8.0';
+          } else {
+            tier = 'T8.1';
+          }
+          classWeaponMap[className] = baseWeapons[className] + ' ' + tier;
+        });
+      } else if (dgType === 'DG PROMO 8.4') {
+        // PROMO 8.4: TODOS são T8.1, EXCETO Oculto/Incubus/Bruxo que sempre são T8.0
+        classWeaponMap = {};
+        Object.keys(baseWeapons).forEach(className => {
+          const tier = alwaysT80Classes.includes(className) ? 'T8.0' : 'T8.1';
+          classWeaponMap[className] = baseWeapons[className] + ' ' + tier;
+        });
+      }
+    }
+
+    // Carregar DG ao abrir a página
+    loadDGTitle();
+
+    // Atualizar label do IP quando a classe for selecionada
+    document.getElementById('playerClass').addEventListener('change', (e) => {
+      const selectedClass = e.target.value;
+      const ipLabel = document.getElementById('ipLabel');
+      
+      if (selectedClass && classWeaponMap[selectedClass]) {
+        ipLabel.textContent = `IP - ${classWeaponMap[selectedClass]}`;
+      } else {
+        ipLabel.textContent = 'IP';
+      }
+    });
+
+    document.getElementById('registerForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const nickname = document.getElementById('nickname').value;
+      const playerClass = document.getElementById('playerClass').value;
+      const ip = document.getElementById('ip').value;
+      const messageDiv = document.getElementById('message');
+
+      try {
+        messageDiv.innerHTML = '<p class="loading">Registrando você na PT...</p>';
+
+        await registerPlayer(nickname, playerClass, ip);
+
+        showNotification('✅ Você foi registrado com sucesso na PT! Boa sorte!', 'success');
+
+        // Limpar formulário
+        document.getElementById('registerForm').reset();
+
+        // Limpar mensagem após 3 segundos
+        setTimeout(() => {
+          messageDiv.innerHTML = '';
+        }, 3000);
+
+      } catch (error) {
+        showNotification(`❌ Erro: ${error.message}`, 'error');
+        messageDiv.innerHTML = '';
+      }
+    });
+
+    // Validação em tempo real para o IP
+    document.getElementById('ip').addEventListener('change', (e) => {
+      let value = parseInt(e.target.value);
+
+      if (value > 2500) {
+        e.target.value = 2500;
+      }
+
+      if (value < 0) {
+        e.target.value = 0;
+      }
+    });
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Escolinha Avalon</title>
+  <link rel="stylesheet" href="../css/style.css?t=1.023">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#2a5298">
+</head>
+
+<body>
+  <button class="logout-btn" onclick="logout()">Sair</button>
+
+  <!-- Container de notificações -->
+  <div id="notificationContainer" class="notification-container"></div>
+
+  <div class="container">
+    <div class="header">
+      <h1>Escolinha Avalon</h1>
+    </div>
+
+    <div class="content">
+      <div style="text-align: center; margin-bottom: 20px;">
+        <button class="btn" onclick="copyInviteLink()"
+          style="background-color: #2a5298; color: white; font-size: 1.1em; padding: 10px 20px;">
+          📋 https://gabrielksilva.github.io/escolinha/
+        </button>
+      </div>
+
+      <!-- Seção de Seleção de DG -->
+
+
+      <div class="admin-header">
+        <div>
+          <p id="totalCount" style="color: #666; margin-top: 5px; font-size: 1.2em;"><strong>Total:</strong>
+            Carregando...</p>
+        </div>
+        <div style="display: flex; gap: 10px;">
+          <div>
+            <label for="dgTypeSelect" style="font-weight: bold; color: #333;"></label>
+            <select id="dgTypeSelect"
+              style="padding: 8px 12px; border-radius: 5px; border: 1px solid #ddd; font-size: 1em; cursor: pointer;">
+              <option value="DG NORMAL">DG NORMAL</option>
+              <option value="DG TREINAMENTO">DG TREINAMENTO</option>
+              <option value="DG PROMO 8.3">DG PROMO 8.3</option>
+              <option value="DG PROMO 8.4">DG PROMO 8.4</option>
+            </select>
+          </div>
+          <button class="btn refresh-btn" onclick="loadPlayers()">Atualizar</button>
+          <button class="btn btn-danger" onclick="clearAllPlayers()"> Limpar pings</button>
+
+        </div>
+      </div>
+
+      <div id="classesContainer" class="classes-grid">
+        <div class="loading">Carregando dados...</div>
+      </div>
+
+      <!-- Nova lista única de DPS -->
+      <div id="dpsContainer" style="margin-top: 30px;">
+        <div class="dps-header">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h2>DPS</h2>
+            <span class="dps-count">0</span>
+          </div>
+        </div>
+        <ul id="dpsList" class="dps-list"></ul>
+      </div>
+
+
+    </div>
+  </div>
+
+  <script src="../js/config.js"></script>
+  <script>
+    // Carregar status da DG ao abrir a página
+    async function loadDGStatus() {
+      try {
+        const selectedDG = await getSelectedDG();
+        if (selectedDG) {
+          document.getElementById('dgTypeSelect').value = selectedDG.dg_type;
+        } else {
+          document.getElementById('dgTypeSelect').value = 'DG NORMAL';
+        }
+      } catch (error) {
+        console.error('Erro ao carregar DG:', error);
+        document.getElementById('dgTypeSelect').value = 'DG NORMAL';
+      }
+    }
+
+    // Salvar DG ao mudar o dropdown
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('dgTypeSelect').addEventListener('change', async (e) => {
+        const dgType = e.target.value;
+        try {
+          await updateDGSelection(dgType, 8);
+          showNotification(`✅ DG alterada para ${dgType}`, 'success');
+        } catch (error) {
+          showNotification(`❌ Erro ao mudar DG: ${error.message}`, 'error');
+          loadDGStatus(); // Revertir se falhar
+        }
+      });
+    });
+
+    // Verificar autenticação
+    if (!isLoggedIn()) {
+      window.location.href = '/login';
+    }
+
+    // Função para copiar link de convite
+    function copyInviteLink() {
+      const url = 'https://gabrielksilva.github.io/escolinha/';
+      navigator.clipboard.writeText(url).then(() => {
+        showNotification('✅ Link copiado para a área de transferência!', 'success');
+      }).catch(() => {
+        // Fallback para navegadores antigos
+        const input = document.createElement('input');
+        input.value = url;
+        document.body.appendChild(input);
+        input.select();
+        document.execCommand('copy');
+        document.body.removeChild(input);
+        showNotification('✅ Link copiado para a área de transferência!', 'success');
+      });
+    }
+
+    async function loadPlayers() {
+      try {
+        const container = document.getElementById('classesContainer');
+        container.innerHTML = '<div class="loading">Carregando jogadores...</div>';
+
+        const playersByClass = await getPlayersByClass();
+
+        let totalPlayers = 0;
+        let html = '';
+        let allDpsPlayers = [];
+        let nonDpsClassCount = 0;
+
+        // Classes que NÃO podem ser duplicadas
+        const noDuplicateClasses = ['Fire', 'Raiz DPS', 'Bruxo DPS', 'Aguia'];
+
+        CLASSES.forEach(cls => {
+          const players = (playersByClass[cls.name] || [])
+            .sort((a, b) => b.ip - a.ip);
+          totalPlayers += players.length;
+
+          // Coletar todos os DPS
+          if (cls.category === 'DPS') {
+            allDpsPlayers = allDpsPlayers.concat(players);
+          } else {
+            // Mostrar as outras classes normalmente
+            nonDpsClassCount++;
+            html += `
+              <div class="class-card">
+                <div class="class-name">
+                  <span>${cls.name}</span>
+                  <span class="class-count">${players.length}</span>
+                </div>
+                <ul class="player-list">
+                  ${players.length > 0
+                ? players.map(player => `
+                      <li class="player-item">
+                        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                          <div>
+                            <span class="player-name">${player.nickname}</span>
+                            <span class="player-ip">IP: ${player.ip}</span>
+                          </div>
+                          <button onclick="deletePlayerConfirm('${player.id}', '${player.nickname}')" class="btn-delete" title="Deletar este jogador">🗑️</button>
+                        </div>
+                      </li>
+                    `).join('')
+                : '<li class="empty-message">Nenhum jogador registrado</li>'
+              }
+                </ul>
+              </div>
+            `;
+          }
+        });
+
+        document.getElementById('totalCount').textContent = `Total: ${totalPlayers} jogador(es) registrado(s)`;
+        container.innerHTML = html;
+
+        // Processar DPS com validação de duplicatas
+        if (allDpsPlayers.length > 0) {
+          // Identificar duplicatas
+          const dpsWithStatus = allDpsPlayers.map(player => ({
+            ...player,
+            isDuplicate: false
+          }));
+
+          // Marcar duplicatas das classes não permitidas
+          noDuplicateClasses.forEach(className => {
+            const playersOfClass = dpsWithStatus.filter(p => p.class === className);
+            if (playersOfClass.length > 1) {
+              // Marcar todos menos o primeiro (maior IP) como duplicata
+              playersOfClass.slice(1).forEach(player => {
+                player.isDuplicate = true;
+              });
+            }
+          });
+
+          // Separar não-duplicados e duplicados
+          const nonDuplicate = dpsWithStatus.filter(p => !p.isDuplicate).sort((a, b) => b.ip - a.ip);
+          const duplicates = dpsWithStatus.filter(p => p.isDuplicate).sort((a, b) => b.ip - a.ip);
+
+          // Renderizar lista DPS
+          const dpsHtml = [...nonDuplicate, ...duplicates]
+            .map(player => `
+              <li class="dps-item ${player.isDuplicate ? 'dps-duplicate' : ''}">
+                <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                  <div style="flex: 1;">
+                    <span class="dps-name">${player.nickname}</span>
+                    <span class="dps-class">${player.class}</span>
+                    <span class="dps-ip">IP: ${player.ip}</span>
+                  </div>
+                  <button onclick="deletePlayerConfirm('${player.id}', '${player.nickname}')" class="btn-delete" title="Deletar este jogador">🗑️</button>
+                </div>
+              </li>
+            `).join('');
+
+          document.getElementById('dpsList').innerHTML = dpsHtml;
+          // Atualizar contador de DPS
+          document.querySelector('.dps-count').textContent = allDpsPlayers.length;
+        } else {
+          // Mostrar mensagem de vazio
+          document.getElementById('dpsList').innerHTML = '<li class="empty-message">Nenhum DPS registrado</li>';
+          document.querySelector('.dps-count').textContent = '0';
+        }
+
+      } catch (error) {
+        document.getElementById('classesContainer').innerHTML = `
+          <div style="grid-column: 1/-1; text-align: center; color: #ff6b6b; padding: 40px;">
+            <p>❌ Erro ao carregar jogadores: ${error.message}</p>
+            <p style="margin-top: 15px; font-size: 0.9em;">Verifique se o Supabase está configurado corretamente em config.js</p>
+          </div>
+        `;
+      }
+    }
+
+    // Função para deletar um jogador com confirmação
+    async function deletePlayerConfirm(playerId, playerName) {
+      if (!confirm(`Tem certeza que deseja deletar ${playerName}?`)) {
+        return;
+      }
+
+      try {
+        await deletePlayer(playerId);
+        showNotification(`✅ ${playerName} foi removido da PT!`, 'success');
+        loadPlayers();
+      } catch (error) {
+        showNotification(`❌ Erro ao deletar: ${error.message}`, 'error');
+      }
+    }
+
+    // Carregar jogadores ao abrir a página
+    loadPlayers();
+    loadDGStatus();
+
+    // Atualizar a cada 5 segundos (opcional)
+    // setInterval(loadPlayers, 5000);
+
+    // Função para limpar todos os jogadores
+    async function clearAllPlayers() {
+      if (!confirm('⚠️ TEM CERTEZA? Isso vai DELETAR TODOS os jogadores registrados!\n\nEsta ação é irreversível!')) {
+        return;
+      }
+
+      if (!confirm('Clique OK novamente para confirmar a deleção de TODOS os pings')) {
+        return;
+      }
+
+      try {
+        // Buscar todos os jogadores
+        const players = await supabaseRequest('players?select=id');
+
+        if (!Array.isArray(players) || players.length === 0) {
+          alert('Nenhum jogador para deletar');
+          return;
+        }
+
+        // Deletar cada um
+        for (let player of players) {
+          await deletePlayer(player.id);
+        }
+
+        alert('✅ Todos os jogadores foram removidos!');
+        loadPlayers();
+      } catch (error) {
+        alert('❌ Erro ao limpar: ' + error.message);
+      }
+    }
+  </script>
+</body>
+
+</html>
