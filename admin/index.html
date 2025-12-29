@@ -11,16 +11,20 @@
 </head>
 
 <body>
-  <button class="logout-btn" onclick="logout()">Sair</button>
+  <nav class="top-nav">
+    <div class="nav-left">
+      <strong>Escolinha Avalon</strong>
+    </div>
+
+    <div class="nav-right">
+      <button class="btn-danger small" onclick="logout()">Sair</button>
+    </div>
+  </nav>
 
   <!-- Container de notificações -->
   <div id="notificationContainer" class="notification-container"></div>
 
   <div class="container">
-    <div class="header">
-      <h1>Escolinha Avalon</h1>
-    </div>
-
     <div class="content">
       <div style="text-align: center; margin-bottom: 20px;">
         <button class="btn" onclick="copyInviteLink()"

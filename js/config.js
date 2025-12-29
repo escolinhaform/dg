@@ -12,7 +12,7 @@ const CLASSES = [
   { category: 'Invisibles', name: 'Oculto' },
   { category: 'Invisibles', name: 'Incubus' },
   { category: 'Suporte', name: 'Quebra Reinos' },
-  { category: 'Suporte', name: 'Bruxo Suporte' },
+  { category: 'Suporte', name: 'Bruxo' },
   { category: 'DPS', name: 'Foice' },
   { category: 'DPS', name: 'Fire' },
   { category: 'DPS', name: 'Frost' },
