@@ -105,7 +105,7 @@ async function login(username, password) {
 // Função para fazer logout
 function logout() {
   localStorage.removeItem('currentUser');
-  window.location.href = 'login.html';
+  window.location.href = '../login';
 }
 
 // Função para verificar se está logado
