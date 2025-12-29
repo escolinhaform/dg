@@ -310,16 +310,20 @@ body {
 }
 
 .register-box {
-  background: white;
+  background: #2d2d2d;
   padding: 40px;
   border-radius: 15px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+border: 2px solid #ffc107;
   width: 100%;
   max-width: 450px;
 }
 
+.register-box label {
+    color: white;
+}
+
 .register-box h2 {
-  color: #1a1a1a;
+  color: white;
   margin-bottom: 30px;
   text-align: center;
   font-size: 2em;
